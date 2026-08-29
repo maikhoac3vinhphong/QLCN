@@ -2,8 +2,9 @@ import { useState } from 'react'
 import type { Profile } from '../lib/auth'
 import Approvals from './Approvals'
 import Settings from './Settings'
+import GroupsRoles from './GroupsRoles'
 
-type Sub = 'hub' | 'approve' | 'settings'
+type Sub = 'hub' | 'approve' | 'settings' | 'groups'
 
 export default function Tools({ profile, classId }: { profile: Profile; classId: string }) {
   const [sub, setSub] = useState<Sub>('hub')
@@ -14,6 +15,7 @@ export default function Tools({ profile, classId }: { profile: Profile; classId:
         <button className="btn" style={{ minHeight: 38, marginBottom: 12 }} onClick={() => setSub('hub')}>← Tiện ích</button>
         {sub === 'approve' && <Approvals profile={profile} classId={classId} />}
         {sub === 'settings' && <Settings classId={classId} />}
+        {sub === 'groups' && <GroupsRoles classId={classId} />}
       </div>
     )
   }
@@ -22,6 +24,7 @@ export default function Tools({ profile, classId }: { profile: Profile; classId:
     <div style={{ display: 'grid', gap: 10, paddingBottom: 20 }}>
       <HubCard title="Chờ duyệt" desc="Duyệt các khoản trừ nặng do tổ trưởng nhập" onClick={() => setSub('approve')} />
       <HubCard title="Thiết lập lớp" desc="Thông tin lớp, thêm học sinh, thêm tiêu chí" onClick={() => setSub('settings')} />
+      <HubCard title="Chia tổ & vai" desc="Gán tổ, chọn tổ trưởng và thủ quỹ" onClick={() => setSub('groups')} />
       <HubCard title="Thu chi quỹ" desc="Sổ quỹ lớp, thu theo tuần, tổng kết" soon />
       <HubCard title="Thông báo" desc="Gửi thông báo cho HS/phụ huynh" soon />
       <HubCard title="Bản tin phụ huynh" desc="Soạn & gửi bản tin tuần" soon />

@@ -120,3 +120,57 @@ export async function setAttendanceBulk(rows: { classId: string; studentId: stri
   )
   if (error) throw error
 }
+
+// ---------- Chia tổ & vai ----------
+export interface GroupFull { id: string; name: string; position: number; leader_student_id: string | null }
+export interface StudentFull { id: string; full_name: string; group_id: string | null; is_treasurer: boolean; user_id: string | null }
+
+export async function getGroupsFull(classId: string): Promise<GroupFull[]> {
+  const { data, error } = await supabase.from('groups')
+    .select('id, name, position, leader_student_id').eq('class_id', classId).order('position')
+  if (error) throw error
+  return (data ?? []) as GroupFull[]
+}
+
+export async function getStudentsFull(classId: string): Promise<StudentFull[]> {
+  const { data, error } = await supabase.from('students')
+    .select('id, full_name, group_id, is_treasurer, user_id').eq('class_id', classId).order('full_name')
+  if (error) throw error
+  return (data ?? []) as StudentFull[]
+}
+
+export async function saveGroupsRoles(classId: string, p: {
+  groupOf: Record<string, string | null>
+  leaderOf: Record<string, string | null>
+  treasurerId: string | null
+  students: StudentFull[]
+  groups: GroupFull[]
+}) {
+  // 1) Gán tổ — gộp theo từng tổ để ít truy vấn.
+  const byGroup = new Map<string, string[]>(); const noGroup: string[] = []
+  for (const [sid, gid] of Object.entries(p.groupOf)) {
+    if (gid) { const a = byGroup.get(gid) ?? []; a.push(sid); byGroup.set(gid, a) } else noGroup.push(sid)
+  }
+  for (const [gid, ids] of byGroup) {
+    const { error } = await supabase.from('students').update({ group_id: gid }).in('id', ids); if (error) throw error
+  }
+  if (noGroup.length) { const { error } = await supabase.from('students').update({ group_id: null }).in('id', noGroup); if (error) throw error }
+
+  // 2) Tổ trưởng: đặt leader cho từng tổ + nâng/hạ vai profile.
+  const userIdOf = new Map(p.students.map((s) => [s.id, s.user_id]))
+  const oldLeaders = new Set(p.groups.map((g) => g.leader_student_id).filter(Boolean) as string[])
+  const newLeaders = new Set(Object.values(p.leaderOf).filter(Boolean) as string[])
+  for (const g of p.groups) {
+    const { error } = await supabase.from('groups').update({ leader_student_id: p.leaderOf[g.id] ?? null }).eq('id', g.id); if (error) throw error
+  }
+  for (const sid of oldLeaders) if (!newLeaders.has(sid)) {
+    const uid = userIdOf.get(sid); if (uid) { const { error } = await supabase.from('profiles').update({ role: 'hs' }).eq('id', uid); if (error) throw error }
+  }
+  for (const sid of newLeaders) {
+    const uid = userIdOf.get(sid); if (uid) { const { error } = await supabase.from('profiles').update({ role: 'totruong' }).eq('id', uid); if (error) throw error }
+  }
+
+  // 3) Thủ quỹ: xoá cờ cũ, đặt cờ mới.
+  { const { error } = await supabase.from('students').update({ is_treasurer: false }).eq('class_id', classId).eq('is_treasurer', true); if (error) throw error }
+  if (p.treasurerId) { const { error } = await supabase.from('students').update({ is_treasurer: true }).eq('id', p.treasurerId); if (error) throw error }
+}
