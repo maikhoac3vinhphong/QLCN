@@ -174,3 +174,150 @@ export async function saveGroupsRoles(classId: string, p: {
   { const { error } = await supabase.from('students').update({ is_treasurer: false }).eq('class_id', classId).eq('is_treasurer', true); if (error) throw error }
   if (p.treasurerId) { const { error } = await supabase.from('students').update({ is_treasurer: true }).eq('id', p.treasurerId); if (error) throw error }
 }
+
+// ---------- Tuần ISO ----------
+export function isoWeek(d = new Date()): string {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  const dayNum = (date.getUTCDay() + 6) % 7
+  date.setUTCDate(date.getUTCDate() - dayNum + 3)
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4))
+  const week = 1 + Math.round(((date.getTime() - firstThursday.getTime()) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7)
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
+}
+
+// ---------- Thu chi quỹ ----------
+export interface FundTx {
+  id: string; kind: 'thu' | 'chi'; amount: number; student_id: string | null
+  week: string | null; category: string | null; note: string | null; created_at: string
+  student_name?: string
+}
+
+export async function getFundConfig(classId: string): Promise<{ weekly_amount: number; note: string | null } | null> {
+  const { data } = await supabase.from('fund_config').select('weekly_amount, note').eq('class_id', classId).maybeSingle()
+  return data as { weekly_amount: number; note: string | null } | null
+}
+export async function setFundConfig(classId: string, weekly_amount: number, note: string | null) {
+  const { error } = await supabase.from('fund_config').upsert({ class_id: classId, weekly_amount, note }, { onConflict: 'class_id' })
+  if (error) throw error
+}
+export async function getWeekPaid(classId: string, week: string): Promise<Set<string>> {
+  const { data, error } = await supabase.from('fund_transactions')
+    .select('student_id').eq('class_id', classId).eq('kind', 'thu').eq('week', week)
+  if (error) throw error
+  return new Set((data ?? []).map((r) => r.student_id).filter(Boolean) as string[])
+}
+export async function recordThu(p: { classId: string; studentId: string | null; amount: number; week: string | null; note: string | null; recordedBy: string }) {
+  const { error } = await supabase.from('fund_transactions').insert({
+    class_id: p.classId, kind: 'thu', amount: p.amount, student_id: p.studentId, week: p.week, note: p.note, recorded_by: p.recordedBy
+  })
+  if (error) throw error
+}
+export async function recordChi(p: { classId: string; amount: number; category: string | null; note: string | null; recordedBy: string }) {
+  const { error } = await supabase.from('fund_transactions').insert({
+    class_id: p.classId, kind: 'chi', amount: p.amount, category: p.category, note: p.note, recorded_by: p.recordedBy
+  })
+  if (error) throw error
+}
+export async function getTransactions(classId: string, limit = 60): Promise<FundTx[]> {
+  const { data, error } = await supabase.from('fund_transactions')
+    .select('id, kind, amount, student_id, week, category, note, created_at, students(full_name)')
+    .eq('class_id', classId).order('created_at', { ascending: false }).limit(limit)
+  if (error) throw error
+  return (data ?? []).map((r: any) => ({ ...r, student_name: r.students?.full_name }))
+}
+export async function deleteTransaction(id: string) {
+  const { error } = await supabase.from('fund_transactions').delete().eq('id', id)
+  if (error) throw error
+}
+export async function fundSummary(classId: string, from: string, to: string): Promise<{ total_thu: number; total_chi: number; balance: number }> {
+  const { data, error } = await supabase.rpc('fund_summary', { p_class_id: classId, p_from: from, p_to: to })
+  if (error) throw error
+  const r = (data ?? [])[0] ?? { total_thu: 0, total_chi: 0, balance: 0 }
+  return r
+}
+export async function amITreasurer(): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+  const { data } = await supabase.from('students').select('is_treasurer').eq('user_id', user.id).maybeSingle()
+  return !!(data as { is_treasurer?: boolean } | null)?.is_treasurer
+}
+
+// ---------- Thông báo & bản tin ----------
+export async function sendAnnouncement(classId: string, title: string, body: string, audience: 'hs' | 'phhs' | 'both', studentIds: string[] | null): Promise<number> {
+  const { data, error } = await supabase.rpc('send_announcement', {
+    p_class_id: classId, p_title: title, p_body: body, p_audience: audience, p_student_ids: studentIds
+  })
+  if (error) throw error
+  return data as number
+}
+export async function sendNewsletter(classId: string, week: string, text: string, toHs: boolean): Promise<number> {
+  const { data, error } = await supabase.rpc('send_weekly_report', {
+    p_class_id: classId, p_week: week, p_text: text, p_to_hs: toHs
+  })
+  if (error) throw error
+  return data as number
+}
+
+// ---------- Thông báo cá nhân (feed) ----------
+export interface Notif { id: string; type: string | null; title: string; body: string | null; read: boolean; created_at: string }
+export async function getNotifications(limit = 50): Promise<Notif[]> {
+  const { data, error } = await supabase.from('notifications').select('id, type, title, body, read, created_at').order('created_at', { ascending: false }).limit(limit)
+  if (error) throw error
+  return (data ?? []) as Notif[]
+}
+export async function getUnreadCount(): Promise<number> {
+  const { count } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('read', false)
+  return count ?? 0
+}
+export async function markAllRead() {
+  await supabase.from('notifications').update({ read: true }).eq('read', false)
+}
+
+// ---------- Onboarding & trang phụ huynh ----------
+export interface ParentLink { student_id: string; full_name: string; student_code: string | null; token: string; claimed: boolean }
+
+export async function ensureParentLinks(classId: string): Promise<ParentLink[]> {
+  const { data, error } = await supabase.rpc('ensure_parent_links', { p_class_id: classId })
+  if (error) throw error
+  return (data ?? []) as ParentLink[]
+}
+
+export async function parentLinkInfo(token: string): Promise<{ full_name: string; claimed: boolean } | null> {
+  const { data, error } = await supabase.rpc('parent_link_info', { p_token: token })
+  if (error) throw error
+  return (data ?? [])[0] ?? null
+}
+
+export async function claimParent(token: string, password: string, parent_name: string | null) {
+  const { data, error } = await supabase.functions.invoke('claim-parent', { body: { token, password, parent_name } })
+  if (error) throw error
+  if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error)
+  return data as { ok?: boolean; already?: boolean; username: string | null }
+}
+
+export interface ChildRecord { id: string; points: number; created_at: string; criterion_name: string; kind: 'cong' | 'tru' }
+export async function getChildRecords(studentId: string, from: string, to: string): Promise<ChildRecord[]> {
+  const { data, error } = await supabase.from('records')
+    .select('id, points, created_at, criteria(name, kind)')
+    .eq('student_id', studentId).eq('status', 'applied')
+    .gte('created_at', from).lte('created_at', to)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map((r: any) => ({ id: r.id, points: r.points, created_at: r.created_at, criterion_name: r.criteria?.name ?? '—', kind: r.criteria?.kind ?? 'cong' }))
+}
+
+export async function getChildAttendance(studentId: string, from: string, to: string): Promise<{ date: string; status: AttStatus }[]> {
+  const { data, error } = await supabase.from('attendance')
+    .select('date, status').eq('student_id', studentId).gte('date', from).lte('date', to).order('date', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as { date: string; status: AttStatus }[]
+}
+
+export async function sendParentFeedback(classId: string, studentId: string, text: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Chưa đăng nhập.')
+  const { error } = await supabase.from('parent_feedback').insert({
+    class_id: classId, student_id: studentId, parent_user_id: user.id, text
+  })
+  if (error) throw error
+}

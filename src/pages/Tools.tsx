@@ -3,8 +3,11 @@ import type { Profile } from '../lib/auth'
 import Approvals from './Approvals'
 import Settings from './Settings'
 import GroupsRoles from './GroupsRoles'
+import Fund from './Fund'
+import Compose from './Compose'
+import ParentLinks from './ParentLinks'
 
-type Sub = 'hub' | 'approve' | 'settings' | 'groups'
+type Sub = 'hub' | 'approve' | 'settings' | 'groups' | 'fund' | 'announce' | 'newsletter' | 'parents'
 
 export default function Tools({ profile, classId }: { profile: Profile; classId: string }) {
   const [sub, setSub] = useState<Sub>('hub')
@@ -16,6 +19,10 @@ export default function Tools({ profile, classId }: { profile: Profile; classId:
         {sub === 'approve' && <Approvals profile={profile} classId={classId} />}
         {sub === 'settings' && <Settings classId={classId} />}
         {sub === 'groups' && <GroupsRoles classId={classId} />}
+        {sub === 'fund' && <Fund profile={profile} classId={classId} canConfig />}
+        {sub === 'announce' && <Compose classId={classId} mode="announcement" />}
+        {sub === 'newsletter' && <Compose classId={classId} mode="newsletter" />}
+        {sub === 'parents' && <ParentLinks classId={classId} />}
       </div>
     )
   }
@@ -25,9 +32,10 @@ export default function Tools({ profile, classId }: { profile: Profile; classId:
       <HubCard title="Chờ duyệt" desc="Duyệt các khoản trừ nặng do tổ trưởng nhập" onClick={() => setSub('approve')} />
       <HubCard title="Thiết lập lớp" desc="Thông tin lớp, thêm học sinh, thêm tiêu chí" onClick={() => setSub('settings')} />
       <HubCard title="Chia tổ & vai" desc="Gán tổ, chọn tổ trưởng và thủ quỹ" onClick={() => setSub('groups')} />
-      <HubCard title="Thu chi quỹ" desc="Sổ quỹ lớp, thu theo tuần, tổng kết" soon />
-      <HubCard title="Thông báo" desc="Gửi thông báo cho HS/phụ huynh" soon />
-      <HubCard title="Bản tin phụ huynh" desc="Soạn & gửi bản tin tuần" soon />
+      <HubCard title="Thu chi quỹ" desc="Đặt mức đóng, thu theo tuần, sổ & tổng kết" onClick={() => setSub('fund')} />
+      <HubCard title="Thông báo" desc="Gửi thông báo cho học sinh / phụ huynh" onClick={() => setSub('announce')} />
+      <HubCard title="Bản tin phụ huynh" desc="Soạn & gửi bản tin tuần" onClick={() => setSub('newsletter')} />
+      <HubCard title="Phụ huynh" desc="Tạo & phát link theo dõi cho phụ huynh" onClick={() => setSub('parents')} />
       <HubCard title="Sơ đồ lớp" desc="Xếp chỗ ngồi theo dãy" soon />
     </div>
   )

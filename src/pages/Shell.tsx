@@ -2,35 +2,42 @@ import { useState } from 'react'
 import type { Profile } from '../lib/auth'
 import { signOut } from '../lib/auth'
 import NetBadge from '../lib/NetBadge'
+import NotificationsBell from './NotificationsBell'
 import Record from './Record'
 import Attendance from './Attendance'
 import Leaderboard from './Leaderboard'
 import Tools from './Tools'
+import Fund from './Fund'
+import Parent from './Parent'
 
-type TabId = 'home' | 'record' | 'attend' | 'board' | 'tools'
+type TabId = 'home' | 'record' | 'attend' | 'board' | 'tools' | 'fund' | 'parent'
 
 const TAB_LABEL: Record<TabId, string> = {
-  home: 'Trang chủ', record: 'Ghi nhận', attend: 'Điểm danh', board: 'Thi đua', tools: 'Tiện ích'
+  home: 'Trang chủ', record: 'Ghi nhận', attend: 'Điểm danh', board: 'Thi đua', tools: 'Tiện ích', fund: 'Quỹ lớp', parent: 'Con tôi'
 }
 
-function tabsFor(role: Profile['role']): TabId[] {
+function tabsFor(role: Profile['role'], isTreasurer: boolean): TabId[] {
   switch (role) {
     case 'gvcn': return ['home', 'record', 'attend', 'board', 'tools']
     case 'totruong': return ['record', 'attend', 'board', 'home']
-    default: return ['board', 'home'] // hs, phhs (trang riêng thêm sau)
+    case 'phhs': return ['parent', 'board', 'home']
+    default: return isTreasurer ? ['board', 'fund', 'home'] : ['board', 'home']
   }
 }
 
-export default function Shell({ profile, classId, onSignedOut }: { profile: Profile; classId: string; onSignedOut: () => void }) {
-  const tabs = tabsFor(profile.role)
+export default function Shell({ profile, classId, isTreasurer, onSignedOut }: { profile: Profile; classId: string; isTreasurer: boolean; onSignedOut: () => void }) {
+  const tabs = tabsFor(profile.role, isTreasurer)
   const [tab, setTab] = useState<TabId>(tabs[0])
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid var(--line)', background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 5 }}>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--line)', background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 10 }}>
         <span style={{ fontWeight: 700, color: 'var(--primary)' }}>QLCN</span>
         <span style={{ fontWeight: 600, fontSize: 15 }}>{TAB_LABEL[tab]}</span>
-        <NetBadge />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificationsBell />
+          <NetBadge />
+        </div>
       </header>
 
       <main style={{ flex: 1, maxWidth: 680, width: '100%', margin: '0 auto', padding: '14px 14px 0' }}>
@@ -38,6 +45,8 @@ export default function Shell({ profile, classId, onSignedOut }: { profile: Prof
         {tab === 'attend' && <Attendance profile={profile} classId={classId} />}
         {tab === 'board' && <Leaderboard classId={classId} />}
         {tab === 'tools' && <Tools profile={profile} classId={classId} />}
+        {tab === 'fund' && <Fund profile={profile} classId={classId} canConfig={false} />}
+        {tab === 'parent' && <Parent classId={classId} />}
         {tab === 'home' && <Home profile={profile} onSignedOut={onSignedOut} />}
       </main>
 
@@ -63,8 +72,8 @@ function Home({ profile, onSignedOut }: { profile: Profile; onSignedOut: () => v
       <div style={{ fontSize: 20, fontWeight: 600 }}>Xin chào, {profile.full_name}</div>
       <div style={{ color: 'var(--muted)', marginTop: 4 }}>Chúc bạn một ngày dạy học vui.</div>
       <p style={{ color: 'var(--muted)', marginTop: 16, fontSize: 14, lineHeight: 1.6 }}>
-        Vào tab <b>Tiện ích</b> để thêm học sinh, thêm tiêu chí hay duyệt điểm. Thu chi quỹ, thông báo,
-        sơ đồ lớp sẽ được thêm ở các bản kế tiếp.
+        Vào tab <b>Tiện ích</b> để thêm học sinh, chia tổ, thu chi quỹ, gửi thông báo và bản tin.
+        Sơ đồ lớp và trang phụ huynh sẽ được thêm ở các bản kế tiếp.
       </p>
       <button className="btn" style={{ marginTop: 16 }} onClick={async () => { await signOut(); onSignedOut() }}>Đăng xuất</button>
     </div>
@@ -77,5 +86,7 @@ function Icon({ id, active }: { id: TabId; active: boolean }) {
   if (id === 'attend') return <svg viewBox="0 0 24 24" {...s}><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4M9 15l2 2 4-4" /></svg>
   if (id === 'board') return <svg viewBox="0 0 24 24" {...s}><path d="M4 20V10M10 20V4M16 20v-8M22 20H2" /></svg>
   if (id === 'tools') return <svg viewBox="0 0 24 24" {...s}><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>
+  if (id === 'parent') return <svg viewBox="0 0 24 24" {...s}><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>
+  if (id === 'fund') return <svg viewBox="0 0 24 24" {...s}><circle cx="12" cy="12" r="9" /><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg>
   return <svg viewBox="0 0 24 24" {...s}><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>
 }
