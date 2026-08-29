@@ -9,11 +9,12 @@ import Leaderboard from './Leaderboard'
 import Tools from './Tools'
 import Fund from './Fund'
 import Parent from './Parent'
+import StudentSelf from './StudentSelf'
 
-type TabId = 'home' | 'record' | 'attend' | 'board' | 'tools' | 'fund' | 'parent'
+type TabId = 'home' | 'record' | 'attend' | 'board' | 'tools' | 'fund' | 'parent' | 'me'
 
 const TAB_LABEL: Record<TabId, string> = {
-  home: 'Trang chủ', record: 'Ghi nhận', attend: 'Điểm danh', board: 'Thi đua', tools: 'Tiện ích', fund: 'Quỹ lớp', parent: 'Con tôi'
+  home: 'Trang chủ', record: 'Ghi nhận', attend: 'Điểm danh', board: 'Thi đua', tools: 'Tiện ích', fund: 'Quỹ lớp', parent: 'Con tôi', me: 'Của tôi'
 }
 
 function tabsFor(role: Profile['role'], isTreasurer: boolean): TabId[] {
@@ -21,7 +22,7 @@ function tabsFor(role: Profile['role'], isTreasurer: boolean): TabId[] {
     case 'gvcn': return ['home', 'record', 'attend', 'board', 'tools']
     case 'totruong': return ['record', 'attend', 'board', 'home']
     case 'phhs': return ['parent', 'board', 'home']
-    default: return isTreasurer ? ['board', 'fund', 'home'] : ['board', 'home']
+    default: return isTreasurer ? ['me', 'board', 'fund', 'home'] : ['me', 'board', 'home']
   }
 }
 
@@ -47,6 +48,7 @@ export default function Shell({ profile, classId, isTreasurer, onSignedOut }: { 
         {tab === 'tools' && <Tools profile={profile} classId={classId} />}
         {tab === 'fund' && <Fund profile={profile} classId={classId} canConfig={false} />}
         {tab === 'parent' && <Parent classId={classId} />}
+        {tab === 'me' && <StudentSelf classId={classId} />}
         {tab === 'home' && <Home profile={profile} onSignedOut={onSignedOut} />}
       </main>
 
@@ -86,6 +88,7 @@ function Icon({ id, active }: { id: TabId; active: boolean }) {
   if (id === 'attend') return <svg viewBox="0 0 24 24" {...s}><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4M9 15l2 2 4-4" /></svg>
   if (id === 'board') return <svg viewBox="0 0 24 24" {...s}><path d="M4 20V10M10 20V4M16 20v-8M22 20H2" /></svg>
   if (id === 'tools') return <svg viewBox="0 0 24 24" {...s}><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>
+  if (id === 'me') return <svg viewBox="0 0 24 24" {...s}><circle cx="12" cy="8" r="3.4" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></svg>
   if (id === 'parent') return <svg viewBox="0 0 24 24" {...s}><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>
   if (id === 'fund') return <svg viewBox="0 0 24 24" {...s}><circle cx="12" cy="12" r="9" /><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg>
   return <svg viewBox="0 0 24 24" {...s}><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>

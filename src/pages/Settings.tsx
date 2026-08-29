@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { errText } from '../lib/err'
 import { parseStudents } from '../lib/parseStudents'
 import { provisionStudents, type ProvisionResult } from '../lib/api'
-import { getCriteria, type Criterion } from '../lib/db'
+import { getCriteria, updateCriterionCategory, type Criterion } from '../lib/db'
+import { AXES } from '../lib/axes'
 
 export default function Settings({ classId }: { classId: string }) {
   const [cls, setCls] = useState<{ name: string; school_year: string } | null>(null)
@@ -63,6 +64,11 @@ export default function Settings({ classId }: { classId: string }) {
     } catch (e) { setErr(errText(e)) } finally { setBusyCrit(false) }
   }
 
+  async function changeCategory(id: string, category: string | null) {
+    setCriteria((prev) => prev.map((c) => c.id === id ? { ...c, category } : c))
+    try { await updateCriterionCategory(id, category) } catch (e) { setErr(errText(e)) }
+  }
+
   return (
     <div style={{ display: 'grid', gap: 14, paddingBottom: 20 }}>
       {err && <div style={box('var(--neg)')}>{err}</div>}
@@ -108,16 +114,26 @@ export default function Settings({ classId }: { classId: string }) {
       <section className="card" style={pad}>
         <h3 style={h3}>Tiêu chí ({criteria.length})</h3>
         {criteria.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'grid', gap: 6, marginBottom: 14 }}>
+            <p style={{ ...hint, margin: 0 }}>Gán mỗi tiêu chí vào một trong 5 mặt để biểu đồ radar của HS có ý nghĩa.</p>
             {criteria.map((c) => {
               const col = c.kind === 'cong' ? 'var(--pos)' : 'var(--neg)'
-              return <span key={c.id} style={{ fontSize: 13, padding: '4px 10px', borderRadius: 999, border: `1px solid ${col}`, color: col }}>
-                {c.name} {c.points > 0 ? '+' + c.points : c.points}{c.requires_approval ? ' · duyệt' : ''}
-              </span>
+              return (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--line)', padding: '6px 0' }}>
+                  <span style={{ flex: 1, fontSize: 14 }}>
+                    {c.name} <b style={{ color: col }}>{c.points > 0 ? '+' + c.points : c.points}</b>{c.requires_approval ? ' · duyệt' : ''}
+                  </span>
+                  <select className="input" style={{ minHeight: 34, padding: '0 8px', fontSize: 13, maxWidth: 130 }}
+                    value={c.category ?? ''} onChange={(e) => changeCategory(c.id, e.target.value || null)}>
+                    <option value="">— nhóm —</option>
+                    {AXES.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+                  </select>
+                </div>
+              )
             })}
           </div>
         )}
-        <p style={hint}>Thêm tiêu chí mới — mỗi dòng: tên | điểm. Trừ từ 5 trở lên sẽ cần duyệt.</p>
+        <p style={hint}>Thêm tiêu chí mới — mỗi dòng: tên | điểm. Trừ từ 5 trở lên sẽ cần duyệt. Sau khi thêm, nhớ gán nhóm ở trên.</p>
         <textarea className="input" style={ta} placeholder={'Giúp bạn học | 2\nNói chuyện riêng | -1'} value={critText} onChange={(e) => setCritText(e.target.value)} />
         <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={busyCrit} onClick={addCriteria}>
           {busyCrit ? 'Đang thêm…' : 'Thêm tiêu chí'}

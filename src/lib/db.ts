@@ -4,7 +4,7 @@ import type { Profile } from './auth'
 export interface Student { id: string; full_name: string; group_id: string | null }
 export interface Criterion {
   id: string; name: string; points: number
-  kind: 'cong' | 'tru'; requires_approval: boolean
+  kind: 'cong' | 'tru'; requires_approval: boolean; category: string | null
 }
 export interface Group { id: string; name: string; position: number }
 export interface LeaderRow { student_id: string; display_name: string; group_id: string | null; total: number; rank: number }
@@ -38,7 +38,7 @@ export async function getStudents(classId: string): Promise<Student[]> {
 
 export async function getCriteria(classId: string): Promise<Criterion[]> {
   const { data, error } = await supabase.from('criteria')
-    .select('id, name, points, kind, requires_approval')
+    .select('id, name, points, kind, requires_approval, category')
     .eq('class_id', classId).eq('active', true).order('points', { ascending: false })
   if (error) throw error
   return (data ?? []) as Criterion[]
@@ -319,5 +319,32 @@ export async function sendParentFeedback(classId: string, studentId: string, tex
   const { error } = await supabase.from('parent_feedback').insert({
     class_id: classId, student_id: studentId, parent_user_id: user.id, text
   })
+  if (error) throw error
+}
+
+// ---------- Trang học sinh ----------
+export async function getMyStudent(): Promise<{ id: string; full_name: string; group_id: string | null; class_id: string } | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase.from('students').select('id, full_name, group_id, class_id').eq('user_id', user.id).maybeSingle()
+  return (data as { id: string; full_name: string; group_id: string | null; class_id: string } | null) ?? null
+}
+
+// Điểm ròng theo từng mặt (category) từ các ghi nhận đã áp dụng.
+export async function getAxisNet(studentId: string): Promise<Record<string, number>> {
+  const { data, error } = await supabase.from('records')
+    .select('points, criteria(category)').eq('student_id', studentId).eq('status', 'applied')
+  if (error) throw error
+  const net: Record<string, number> = {}
+  for (const r of (data ?? []) as any[]) {
+    const cat = r.criteria?.category
+    if (!cat) continue
+    net[cat] = (net[cat] ?? 0) + r.points
+  }
+  return net
+}
+
+export async function updateCriterionCategory(id: string, category: string | null) {
+  const { error } = await supabase.from('criteria').update({ category }).eq('id', id)
   if (error) throw error
 }
