@@ -1,0 +1,93 @@
+/* QLCN — Tokens gốc (Design System QLCN-04).
+   Đổi --primary là cả app đổi màu (nhờ color-mix). */
+:root {
+  --primary: #0d9488;            /* mặc định; người dùng đổi được */
+  --bg: #f6f8f9;                 /* nền cool off-white */
+  --surface: #ffffff;
+  --line: #e6eaed;
+  --ink: #1c2430;
+  --muted: #6b7683;
+  --pos: #159a63;                /* cộng điểm */
+  --neg: #c26a5a;                /* trừ điểm — tông dịu, KHÔNG đỏ chói */
+  --warn: #b07d0a;               /* muộn / cảnh báo */
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(20,30,45,.04), 0 8px 24px rgba(20,30,45,.05);
+
+  /* sắc độ nhạt sinh từ --primary */
+  --primary-050: color-mix(in srgb, var(--primary) 6%, #fff);
+  --primary-100: color-mix(in srgb, var(--primary) 12%, #fff);
+  --primary-200: color-mix(in srgb, var(--primary) 22%, #fff);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a { color: var(--primary); }
+
+/* vùng chạm tối thiểu ≥40px (Accessibility QLCN-04 §5) */
+.btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 15px;
+  transition: background .15s, border-color .15s, opacity .15s;
+}
+.btn:hover { background: var(--primary-050); }
+.btn:disabled { opacity: .55; cursor: default; }
+
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.btn-primary:hover { background: color-mix(in srgb, var(--primary) 88%, #000); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* ≥16px để iOS không auto-zoom */
+}
+.input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+.label { font-size: 14px; font-weight: 500; color: var(--muted); margin-bottom: 6px; display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
