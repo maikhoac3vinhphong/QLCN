@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Profile } from '../lib/auth'
 import { decideRecord, getPending, type PendingRow } from '../lib/db'
+import { errText } from '../lib/err'
 
 export default function Approvals({ profile, classId }: { profile: Profile; classId: string }) {
   const [rows, setRows] = useState<PendingRow[]>([])
@@ -10,7 +11,7 @@ export default function Approvals({ profile, classId }: { profile: Profile; clas
 
   const load = useCallback(async () => {
     try { setRows(await getPending(classId)) }
-    catch (e) { setErr(e instanceof Error ? e.message : String(e)) }
+    catch (e) { setErr(errText(e)) }
     finally { setLoading(false) }
   }, [classId])
 
@@ -21,7 +22,7 @@ export default function Approvals({ profile, classId }: { profile: Profile; clas
     try {
       await decideRecord(id, approve, profile.id)
       setRows((prev) => prev.filter((r) => r.id !== id))
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)) } finally { setBusy(null) }
+    } catch (e) { setErr(errText(e)) } finally { setBusy(null) }
   }
 
   if (loading) return <Center>Đang tải…</Center>

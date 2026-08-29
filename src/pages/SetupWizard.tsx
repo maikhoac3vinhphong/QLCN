@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { Profile } from '../lib/auth'
 import { parseStudents, type ParsedStudent } from '../lib/parseStudents'
 import { provisionStudents, type ProvisionResult } from '../lib/api'
+import { errText } from '../lib/err'
 
 type Step = 1 | 2 | 3 | 4
 
@@ -301,7 +302,7 @@ function defaultSchoolYear() {
   const start = m >= 5 ? y : y - 1 // năm học bắt đầu ~ tháng 8
   return `${start}-${start + 1}`
 }
-const msg = (e: unknown) => e instanceof Error ? e.message : String(e)
+const msg = (e: unknown) => errText(e)
 const csv = (s: string) => /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 
 const pad: React.CSSProperties = { padding: 22 }

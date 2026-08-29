@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Profile } from '../lib/auth'
 import { addRecord, getCriteria, getGroups, getStudents, getStudentTotals, type Criterion, type Group, type Student } from '../lib/db'
+import { errText } from '../lib/err'
 
 interface Pending {
   key: string; studentId: string; label: string; delta: number; requiresApproval: boolean
@@ -25,7 +26,7 @@ export default function Record({ profile, classId }: { profile: Profile; classId
           getStudents(classId), getCriteria(classId), getGroups(classId), getStudentTotals(classId)
         ])
         setStudents(st); setCriteria(cr); setGroups(gr); setTotals(to)
-      } catch (e) { setErr(e instanceof Error ? e.message : String(e)) } finally { setLoading(false) }
+      } catch (e) { setErr(errText(e)) } finally { setLoading(false) }
     })()
     return () => { Object.values(timers.current).forEach(clearTimeout) }
   }, [classId])
@@ -60,7 +61,7 @@ export default function Record({ profile, classId }: { profile: Profile; classId
       await addRecord({ classId, studentId: s.id, criterionId: c.id, points: c.points, recordedBy: profile.id })
     } catch (e) {
       bump(s.id, -p.delta) // hoàn lại nếu ghi lỗi
-      setErr('Ghi nhận lỗi: ' + (e instanceof Error ? e.message : String(e)))
+      setErr('Ghi nhận lỗi: ' + (errText(e)))
     }
   }
 

@@ -92,3 +92,31 @@ export async function decideRecord(id: string, approve: boolean, deciderId: stri
   }).eq('id', id)
   if (error) throw error
 }
+
+// ---------- Điểm danh ----------
+export type AttStatus = 'present' | 'late' | 'excused' | 'absent'
+
+export async function getAttendance(classId: string, date: string): Promise<Map<string, AttStatus>> {
+  const { data, error } = await supabase.from('attendance')
+    .select('student_id, status').eq('class_id', classId).eq('date', date)
+  if (error) throw error
+  const m = new Map<string, AttStatus>()
+  for (const r of (data ?? []) as { student_id: string; status: AttStatus }[]) m.set(r.student_id, r.status)
+  return m
+}
+
+export async function setAttendance(p: { classId: string; studentId: string; date: string; status: AttStatus; recordedBy: string }) {
+  const { error } = await supabase.from('attendance').upsert({
+    class_id: p.classId, student_id: p.studentId, date: p.date, status: p.status, recorded_by: p.recordedBy
+  }, { onConflict: 'student_id,date' })
+  if (error) throw error
+}
+
+export async function setAttendanceBulk(rows: { classId: string; studentId: string; date: string; status: AttStatus; recordedBy: string }[]) {
+  if (rows.length === 0) return
+  const { error } = await supabase.from('attendance').upsert(
+    rows.map((r) => ({ class_id: r.classId, student_id: r.studentId, date: r.date, status: r.status, recorded_by: r.recordedBy })),
+    { onConflict: 'student_id,date' }
+  )
+  if (error) throw error
+}

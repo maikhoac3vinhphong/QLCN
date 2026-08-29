@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getGroupTotals, getLeaderboard, type GroupRow, type LeaderRow } from '../lib/db'
+import { errText } from '../lib/err'
 
 export default function Leaderboard({ classId }: { classId: string }) {
   const [tab, setTab] = useState<'ca_nhan' | 'to'>('ca_nhan')
@@ -12,7 +13,7 @@ export default function Leaderboard({ classId }: { classId: string }) {
     try {
       const [lb, gt] = await Promise.all([getLeaderboard(classId), getGroupTotals(classId)])
       setRows(lb); setGroups(gt)
-    } catch (e) { setErr(e instanceof Error ? e.message : String(e)) } finally { setLoading(false) }
+    } catch (e) { setErr(errText(e)) } finally { setLoading(false) }
   }, [classId])
 
   useEffect(() => {
