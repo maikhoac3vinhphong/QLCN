@@ -243,19 +243,25 @@ export async function amITreasurer(): Promise<boolean> {
 }
 
 // ---------- Thông báo & bản tin ----------
-export async function sendAnnouncement(classId: string, title: string, body: string, audience: 'hs' | 'phhs' | 'both', studentIds: string[] | null): Promise<number> {
+export async function sendAnnouncement(classId: string, title: string, body: string, audience: 'hs' | 'phhs' | 'both', studentIds: string[] | null): Promise<string[]> {
   const { data, error } = await supabase.rpc('send_announcement', {
     p_class_id: classId, p_title: title, p_body: body, p_audience: audience, p_student_ids: studentIds
   })
   if (error) throw error
-  return data as number
+  return (data ?? []) as string[]
 }
-export async function sendNewsletter(classId: string, week: string, text: string, toHs: boolean): Promise<number> {
+export async function sendNewsletter(classId: string, week: string, text: string, toHs: boolean): Promise<string[]> {
   const { data, error } = await supabase.rpc('send_weekly_report', {
     p_class_id: classId, p_week: week, p_text: text, p_to_hs: toHs
   })
   if (error) throw error
-  return data as number
+  return (data ?? []) as string[]
+}
+
+// Đẩy Web Push (bổ trợ — lỗi thì im lặng, feed chuông vẫn có).
+export async function sendPush(userIds: string[], title: string, body: string) {
+  if (!userIds || userIds.length === 0) return
+  try { await supabase.functions.invoke('send-push', { body: { user_ids: userIds, title, body } }) } catch { /* im lặng */ }
 }
 
 // ---------- Thông báo cá nhân (feed) ----------

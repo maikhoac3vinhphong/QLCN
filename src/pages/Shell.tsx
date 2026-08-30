@@ -10,6 +10,7 @@ import Tools from './Tools'
 import Fund from './Fund'
 import Parent from './Parent'
 import StudentSelf from './StudentSelf'
+import PushToggle from './PushToggle'
 
 type TabId = 'home' | 'record' | 'attend' | 'board' | 'tools' | 'fund' | 'parent' | 'me'
 
@@ -78,6 +79,7 @@ function Home({ profile, onSignedOut }: { profile: Profile; onSignedOut: () => v
         Sơ đồ lớp và trang phụ huynh sẽ được thêm ở các bản kế tiếp.
       </p>
       <button className="btn" style={{ marginTop: 16 }} onClick={async () => { await signOut(); onSignedOut() }}>Đăng xuất</button>
+      <PushToggle />
     </div>
   )
 }

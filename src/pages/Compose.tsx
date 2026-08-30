@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { errText } from '../lib/err'
-import { getStudents, sendAnnouncement, sendNewsletter, isoWeek, type Student } from '../lib/db'
+import { getStudents, sendAnnouncement, sendNewsletter, sendPush, isoWeek, type Student } from '../lib/db'
 
 export default function Compose({ classId, mode }: { classId: string; mode: 'announcement' | 'newsletter' }) {
   const [title, setTitle] = useState('')
@@ -24,15 +24,17 @@ export default function Compose({ classId, mode }: { classId: string; mode: 'ann
       if (scope === 'custom' && picked.size === 0) { setErr('Chọn ít nhất một học sinh.'); return }
       setBusy(true)
       try {
-        const n = await sendAnnouncement(classId, title.trim(), body.trim(), audience, scope === 'custom' ? [...picked] : null)
-        setOk(recipientMsg(n, audience)); setTitle(''); setBody(''); setPicked(new Set()); setScope('all')
+        const ids = await sendAnnouncement(classId, title.trim(), body.trim(), audience, scope === 'custom' ? [...picked] : null)
+        await sendPush(ids, title.trim(), body.trim())
+        setOk(recipientMsg(ids.length, audience)); setTitle(''); setBody(''); setPicked(new Set()); setScope('all')
       } catch (e) { setErr(errText(e)) } finally { setBusy(false) }
     } else {
       if (!body.trim()) { setErr('Nhập nội dung bản tin.'); return }
       setBusy(true)
       try {
-        const n = await sendNewsletter(classId, week.trim(), body.trim(), toHs)
-        setOk(n === 0 ? 'Đã lưu & gửi. Hiện chưa có phụ huynh nào nhận (chờ onboarding phụ huynh).' : `Đã gửi tới ${n} người.`)
+        const ids = await sendNewsletter(classId, week.trim(), body.trim(), toHs)
+        await sendPush(ids, 'Bản tin tuần ' + week.trim(), body.trim())
+        setOk(ids.length === 0 ? 'Đã lưu & gửi. Hiện chưa có phụ huynh nào nhận (chờ onboarding phụ huynh).' : `Đã gửi tới ${ids.length} người.`)
         setBody('')
       } catch (e) { setErr(errText(e)) } finally { setBusy(false) }
     }
