@@ -368,3 +368,20 @@ export async function saveSeating(rows: { id: string; group_id: string | null; s
     supabase.from('students').update({ group_id: r.group_id, seat_index: r.seat_index, seat_locked: r.seat_locked }).eq('id', r.id)
   ))
 }
+
+// ---------- Cảnh báo sớm & năm mới ----------
+export interface Warning { student_id: string; full_name: string; late_absent: number; recent_net: number }
+export async function getEarlyWarnings(classId: string): Promise<Warning[]> {
+  const { data, error } = await supabase.rpc('early_warnings', { p_class_id: classId })
+  if (error) throw error
+  return (data ?? []) as Warning[]
+}
+export async function getClassInfo(classId: string): Promise<{ name: string; school_year: string; archived: boolean } | null> {
+  const { data } = await supabase.from('classes').select('name, school_year, archived').eq('id', classId).maybeSingle()
+  return data as { name: string; school_year: string; archived: boolean } | null
+}
+export async function startNewYear(classId: string, schoolYear: string): Promise<string> {
+  const { data, error } = await supabase.rpc('start_new_year', { p_class_id: classId, p_school_year: schoolYear })
+  if (error) throw error
+  return data as string
+}
