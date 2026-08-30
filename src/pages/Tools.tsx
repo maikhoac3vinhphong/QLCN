@@ -9,8 +9,9 @@ import ParentLinks from './ParentLinks'
 import SeatingChart from './SeatingChart'
 import EarlyWarnings from './EarlyWarnings'
 import NewYear from './NewYear'
+import StudentManage from './StudentManage'
 
-type Sub = 'hub' | 'approve' | 'settings' | 'groups' | 'fund' | 'announce' | 'newsletter' | 'parents' | 'seating' | 'warnings' | 'newyear'
+type Sub = 'hub' | 'approve' | 'settings' | 'groups' | 'fund' | 'announce' | 'newsletter' | 'parents' | 'seating' | 'warnings' | 'newyear' | 'manage'
 
 export default function Tools({ profile, classId }: { profile: Profile; classId: string }) {
   const [sub, setSub] = useState<Sub>('hub')
@@ -29,6 +30,7 @@ export default function Tools({ profile, classId }: { profile: Profile; classId:
         {sub === 'seating' && <SeatingChart classId={classId} />}
         {sub === 'warnings' && <EarlyWarnings classId={classId} />}
         {sub === 'newyear' && <NewYear classId={classId} />}
+        {sub === 'manage' && <StudentManage classId={classId} />}
       </div>
     )
   }
@@ -56,6 +58,7 @@ interface ToolDef { sub: Exclude<Sub, 'hub'>; title: string; desc: string; color
 const TOOLS: ToolDef[] = [
   { sub: 'approve', title: 'Chờ duyệt', desc: 'Duyệt khoản trừ nặng', color: '#b07d0a' },
   { sub: 'settings', title: 'Thiết lập lớp', desc: 'Thông tin lớp, thêm HS, tiêu chí', color: '#0d9488' },
+  { sub: 'manage', title: 'Quản lý học sinh', desc: 'Sửa, đổi mật khẩu, cho thôi học', color: '#1f9e8a' },
   { sub: 'groups', title: 'Chia tổ & vai', desc: 'Gán tổ, tổ trưởng, thủ quỹ', color: '#5b6ee0' },
   { sub: 'fund', title: 'Thu chi quỹ', desc: 'Mức đóng, thu tuần, tổng kết', color: '#2f8f4e' },
   { sub: 'announce', title: 'Thông báo', desc: 'Gửi học sinh / phụ huynh', color: '#0f7f9e' },
@@ -71,6 +74,7 @@ function ToolIcon({ sub, color }: { sub: string; color: string }) {
   switch (sub) {
     case 'approve': return <svg viewBox="0 0 24 24" {...s}><path d="M9 12l2 2 4-4" /><circle cx="12" cy="12" r="9" /></svg>
     case 'settings': return <svg viewBox="0 0 24 24" {...s}><circle cx="12" cy="12" r="3" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M18.4 5.6l-2 2M7.6 16.4l-2 2" /></svg>
+    case 'manage': return <svg viewBox="0 0 24 24" {...s}><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 8h5M18.5 5.5v5" /></svg>
     case 'groups': return <svg viewBox="0 0 24 24" {...s}><circle cx="8" cy="9" r="2.4" /><circle cx="16" cy="9" r="2.4" /><path d="M3.5 19a4.5 4.5 0 0 1 9 0M11.5 19a4.5 4.5 0 0 1 9 0" /></svg>
     case 'fund': return <svg viewBox="0 0 24 24" {...s}><circle cx="12" cy="12" r="9" /><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg>
     case 'announce': return <svg viewBox="0 0 24 24" {...s}><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1Z" /><path d="M16 9a4 4 0 0 1 0 6" /></svg>

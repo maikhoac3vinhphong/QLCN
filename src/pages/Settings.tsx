@@ -82,10 +82,10 @@ export default function Settings({ classId }: { classId: string }) {
 
       <section className="card" style={pad}>
         <h3 style={h3}>Thêm học sinh</h3>
-        <p style={hint}>Dán từ Excel: mỗi dòng một HS, 3 cột Họ tên · Giới tính · Mã HS (Tab). HS đã có mã sẽ được bỏ qua.</p>
+        <p style={hint}>Dán từ Excel: mỗi dòng một HS, 2 cột Họ tên · Giới tính (Tab). Mã HS và mật khẩu hệ thống tự sinh (mã = tên lớp + số thứ tự).</p>
         {!creds ? (
           <>
-            <textarea className="input" style={ta} placeholder={'Nguyễn Văn An\tNam\t8A101'} value={raw} onChange={(e) => setRaw(e.target.value)} />
+            <textarea className="input" style={ta} placeholder={'Nguyễn Văn An\tNam\nTrần Thị Bích\tNữ'} value={raw} onChange={(e) => setRaw(e.target.value)} />
             {parsed.length > 0 && <div style={{ fontSize: 14, color: 'var(--muted)', marginTop: 8 }}>Nhận diện {parsed.length} học sinh.</div>}
             <button className="btn btn-primary" style={{ marginTop: 12 }} disabled={busyProv || parsed.length === 0} onClick={provision}>
               {busyProv ? 'Đang tạo…' : `Tạo tài khoản (${parsed.length})`}

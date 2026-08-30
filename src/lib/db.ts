@@ -31,7 +31,7 @@ export async function getGroups(classId: string): Promise<Group[]> {
 
 export async function getStudents(classId: string): Promise<Student[]> {
   const { data, error } = await supabase.from('students')
-    .select('id, full_name, group_id').eq('class_id', classId).order('full_name')
+    .select('id, full_name, group_id').eq('class_id', classId).eq('active', true).order('full_name')
   if (error) throw error
   return (data ?? []) as Student[]
 }
@@ -134,7 +134,7 @@ export async function getGroupsFull(classId: string): Promise<GroupFull[]> {
 
 export async function getStudentsFull(classId: string): Promise<StudentFull[]> {
   const { data, error } = await supabase.from('students')
-    .select('id, full_name, group_id, is_treasurer, user_id').eq('class_id', classId).order('full_name')
+    .select('id, full_name, group_id, is_treasurer, user_id').eq('class_id', classId).eq('active', true).order('full_name')
   if (error) throw error
   return (data ?? []) as StudentFull[]
 }
@@ -359,7 +359,7 @@ export async function updateCriterionCategory(id: string, category: string | nul
 export interface SeatStudent { id: string; full_name: string; group_id: string | null; seat_index: number | null; seat_locked: boolean }
 export async function getSeating(classId: string): Promise<SeatStudent[]> {
   const { data, error } = await supabase.from('students')
-    .select('id, full_name, group_id, seat_index, seat_locked').eq('class_id', classId).order('full_name')
+    .select('id, full_name, group_id, seat_index, seat_locked').eq('class_id', classId).eq('active', true).order('full_name')
   if (error) throw error
   return (data ?? []) as SeatStudent[]
 }
@@ -376,12 +376,42 @@ export async function getEarlyWarnings(classId: string): Promise<Warning[]> {
   if (error) throw error
   return (data ?? []) as Warning[]
 }
-export async function getClassInfo(classId: string): Promise<{ name: string; school_year: string; archived: boolean } | null> {
-  const { data } = await supabase.from('classes').select('name, school_year, archived').eq('id', classId).maybeSingle()
-  return data as { name: string; school_year: string; archived: boolean } | null
+export async function getClassInfo(classId: string): Promise<{ name: string; school_year: string; archived: boolean; seating_mode: string } | null> {
+  const { data } = await supabase.from('classes').select('name, school_year, archived, seating_mode').eq('id', classId).maybeSingle()
+  return data as { name: string; school_year: string; archived: boolean; seating_mode: string } | null
+}
+
+export async function setSeatingMode(classId: string, mode: 'day' | 'zone') {
+  const { error } = await supabase.from('classes').update({ seating_mode: mode }).eq('id', classId)
+  if (error) throw error
 }
 export async function startNewYear(classId: string, schoolYear: string): Promise<string> {
   const { data, error } = await supabase.rpc('start_new_year', { p_class_id: classId, p_school_year: schoolYear })
   if (error) throw error
   return data as string
+}
+
+
+// ---------- Quản lý học sinh ----------
+export interface ManageStudent { id: string; full_name: string; gender: string | null; student_code: string | null; active: boolean; user_id: string | null }
+export async function getStudentsManage(classId: string): Promise<ManageStudent[]> {
+  const { data, error } = await supabase.from('students')
+    .select('id, full_name, gender, student_code, active, user_id')
+    .eq('class_id', classId).order('active', { ascending: false }).order('full_name')
+  if (error) throw error
+  return (data ?? []) as ManageStudent[]
+}
+export async function updateStudent(id: string, patch: { full_name?: string; gender?: string | null }) {
+  const { error } = await supabase.from('students').update(patch).eq('id', id)
+  if (error) throw error
+}
+export async function setStudentActive(id: string, active: boolean) {
+  const { error } = await supabase.from('students').update({ active }).eq('id', id)
+  if (error) throw error
+}
+export async function resetStudentPassword(studentId: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('reset-password', { body: { student_id: studentId } })
+  if (error) throw error
+  if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error)
+  return (data as { password: string }).password
 }
