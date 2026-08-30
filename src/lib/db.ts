@@ -348,3 +348,17 @@ export async function updateCriterionCategory(id: string, category: string | nul
   const { error } = await supabase.from('criteria').update({ category }).eq('id', id)
   if (error) throw error
 }
+
+// ---------- Sơ đồ lớp ----------
+export interface SeatStudent { id: string; full_name: string; group_id: string | null; seat_index: number | null; seat_locked: boolean }
+export async function getSeating(classId: string): Promise<SeatStudent[]> {
+  const { data, error } = await supabase.from('students')
+    .select('id, full_name, group_id, seat_index, seat_locked').eq('class_id', classId).order('full_name')
+  if (error) throw error
+  return (data ?? []) as SeatStudent[]
+}
+export async function saveSeating(rows: { id: string; group_id: string | null; seat_index: number | null; seat_locked: boolean }[]) {
+  await Promise.all(rows.map((r) =>
+    supabase.from('students').update({ group_id: r.group_id, seat_index: r.seat_index, seat_locked: r.seat_locked }).eq('id', r.id)
+  ))
+}

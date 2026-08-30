@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
 import { errText } from '../lib/err'
 import { ensureParentLinks, type ParentLink } from '../lib/db'
 
@@ -7,6 +8,7 @@ export default function ParentLinks({ classId }: { classId: string }) {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [qr, setQr] = useState<Record<string, string>>({})
 
   useEffect(() => {
     ensureParentLinks(classId).then(setLinks).catch((e) => setErr(errText(e))).finally(() => setLoading(false))
@@ -14,6 +16,11 @@ export default function ParentLinks({ classId }: { classId: string }) {
 
   const urlOf = (token: string) => `${window.location.origin}/ph/${token}`
 
+  async function showQR(token: string) {
+    if (qr[token]) { setQr((p) => { const n = { ...p }; delete n[token]; return n }) ; return }
+    try { const url = await QRCode.toDataURL(urlOf(token), { width: 220, margin: 1 }); setQr((p) => ({ ...p, [token]: url })) }
+    catch (e) { setErr(errText(e)) }
+  }
   async function copy(token: string) {
     try { await navigator.clipboard.writeText(urlOf(token)); setCopied(token); setTimeout(() => setCopied(null), 1500) }
     catch { setErr('Không sao chép được. Hãy nhấn giữ để chọn link thủ công.') }
@@ -43,7 +50,11 @@ export default function ParentLinks({ classId }: { classId: string }) {
             <button className="btn" style={{ minHeight: 40, whiteSpace: 'nowrap' }} onClick={() => copy(l.token)}>
               {copied === l.token ? 'Đã chép' : 'Sao chép'}
             </button>
+            <button className="btn" style={{ minHeight: 40, whiteSpace: 'nowrap' }} onClick={() => showQR(l.token)}>
+              {qr[l.token] ? 'Ẩn QR' : 'QR'}
+            </button>
           </div>
+          {qr[l.token] && <div style={{ textAlign: 'center', marginTop: 10 }}><img src={qr[l.token]} alt="QR" style={{ width: 200, height: 200 }} /><div style={{ fontSize: 12, color: 'var(--muted)' }}>Cho phụ huynh quét để nhận con</div></div>}
         </div>
       ))}
     </div>

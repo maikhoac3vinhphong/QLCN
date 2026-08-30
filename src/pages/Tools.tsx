@@ -6,8 +6,9 @@ import GroupsRoles from './GroupsRoles'
 import Fund from './Fund'
 import Compose from './Compose'
 import ParentLinks from './ParentLinks'
+import SeatingChart from './SeatingChart'
 
-type Sub = 'hub' | 'approve' | 'settings' | 'groups' | 'fund' | 'announce' | 'newsletter' | 'parents'
+type Sub = 'hub' | 'approve' | 'settings' | 'groups' | 'fund' | 'announce' | 'newsletter' | 'parents' | 'seating'
 
 export default function Tools({ profile, classId }: { profile: Profile; classId: string }) {
   const [sub, setSub] = useState<Sub>('hub')
@@ -23,6 +24,7 @@ export default function Tools({ profile, classId }: { profile: Profile; classId:
         {sub === 'announce' && <Compose classId={classId} mode="announcement" />}
         {sub === 'newsletter' && <Compose classId={classId} mode="newsletter" />}
         {sub === 'parents' && <ParentLinks classId={classId} />}
+        {sub === 'seating' && <SeatingChart classId={classId} />}
       </div>
     )
   }
@@ -36,7 +38,7 @@ export default function Tools({ profile, classId }: { profile: Profile; classId:
       <HubCard title="Thông báo" desc="Gửi thông báo cho học sinh / phụ huynh" onClick={() => setSub('announce')} />
       <HubCard title="Bản tin phụ huynh" desc="Soạn & gửi bản tin tuần" onClick={() => setSub('newsletter')} />
       <HubCard title="Phụ huynh" desc="Tạo & phát link theo dõi cho phụ huynh" onClick={() => setSub('parents')} />
-      <HubCard title="Sơ đồ lớp" desc="Xếp chỗ ngồi theo dãy" soon />
+      <HubCard title="Sơ đồ lớp" desc="Xếp chỗ ngồi: chạm đổi chỗ, khóa chỗ, xáo tổ" onClick={() => setSub('seating')} />
     </div>
   )
 }
